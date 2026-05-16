@@ -1,0 +1,283 @@
+{
+"info": {
+"_postman_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+"name": "PrepIQ API Collection",
+"description": "Comprehensive API collection for testing PrepIQ backend endpoints sequentially.",
+"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+},
+"item": [
+{
+"name": "Auth",
+"item": [
+{
+"name": "User Signup",
+"request": {
+"method": "POST",
+"header": [
+{
+"key": "Content-Type",
+"value": "application/json"
+}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"username\": \"testuser\",\n    \"email\": \"testuser@example.com\",\n    \"password\": \"SecurePassword123\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/auth/signup",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"auth",
+"signup"
+]
+}
+},
+"response": []
+},
+{
+"name": "User Login",
+"event": [
+{
+"listen": "test",
+"script": {
+"exec": [
+"// Automatically capture the bearer token and save it to variables\n",
+"var jsonData = pm.response.json();\n",
+"if (jsonData.token) {\n",
+"    pm.collectionVariables.set(\"bearer_token\", jsonData.token);\n",
+"}"
+],
+"type": "text/javascript"
+}
+}
+],
+"request": {
+"method": "POST",
+"header": [
+{
+"key": "Content-Type",
+"value": "application/json"
+}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"email\": \"testuser@example.com\",\n    \"password\": \"SecurePassword123\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/auth/login",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"auth",
+"login"
+]
+}
+},
+"response": []
+}
+]
+},
+{
+"name": "Profile",
+"item": [
+{
+"name": "Get User Profile",
+"request": {
+"auth": {
+"type": "bearer",
+"bearer": [
+{
+"key": "token",
+"value": "{{bearer_token}}",
+"type": "string"
+}
+]
+},
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{base_url}}/api/profile",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"profile"
+]
+}
+},
+"response": []
+},
+{
+"name": "Update User Profile",
+"request": {
+"auth": {
+"type": "bearer",
+"bearer": [
+{
+"key": "token",
+"value": "{{bearer_token}}",
+"type": "string"
+}
+]
+},
+"method": "PUT",
+"header": [
+{
+"key": "Content-Type",
+"value": "application/json"
+}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"fullName\": \"Test User\",\n    \"skills\": [\"Java\", \"Python\", \"SQL\"]\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/profile/update",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"profile",
+"update"
+]
+}
+},
+"response": []
+}
+]
+},
+{
+"name": "Job Tracker",
+"item": [
+{
+"name": "Get Tracked Jobs",
+"request": {
+"auth": {
+"type": "bearer",
+"bearer": [
+{
+"key": "token",
+"value": "{{bearer_token}}",
+"type": "string"
+}
+]
+},
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{base_url}}/api/jobs",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"jobs"
+]
+}
+},
+"response": []
+},
+{
+"name": "Add Job Application",
+"request": {
+"auth": {
+"type": "bearer",
+"bearer": [
+{
+"key": "token",
+"value": "{{bearer_token}}",
+"type": "string"
+}
+]
+},
+"method": "POST",
+"header": [
+{
+"key": "Content-Type",
+"value": "application/json"
+}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"companyName\": \"Target Company\",\n    \"role\": \"Software Engineer\",\n    \"status\": \"Applied\",\n    \"dateApplied\": \"2026-05-16\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/jobs/add",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"jobs",
+"add"
+]
+}
+},
+"response": []
+}
+]
+},
+{
+"name": "ML-NLP",
+"item": [
+{
+"name": "Analyze Resume",
+"request": {
+"auth": {
+"type": "bearer",
+"bearer": [
+{
+"key": "token",
+"value": "{{bearer_token}}",
+"type": "string"
+}
+]
+},
+"method": "POST",
+"header": [
+{
+"key": "Content-Type",
+"value": "application/json"
+}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"resumeText\": \"Sample resume content parsing text for keyword matching analysis.\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/ml/analyze-resume",
+"host": [
+"{{base_url}}"
+],
+"path": [
+"api",
+"ml",
+"analyze-resume"
+]
+}
+},
+"response": []
+}
+]
+}
+],
+"variable": [
+{
+"key": "base_url",
+"value": "http://localhost:8000",
+"type": "string"
+},
+{
+"key": "bearer_token",
+"value": "",
+"type": "string"
+}
+]
+}

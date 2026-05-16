@@ -23,6 +23,131 @@ const FEAR_OPTIONS = [
   "Group discussions",
 ];
 
+const PREDEFINED_ROLES = [
+  "Software Engineer", "Frontend Developer", "Backend Developer", "Full Stack Developer", "Web Developer",
+  "Mobile App Developer", "Android Developer", "iOS Developer", "React Developer", "Node.js Developer",
+  "Java Developer", "Python Developer", "C++ Developer", "DevOps Engineer", "Cloud Engineer",
+  "Site Reliability Engineer", "Data Analyst", "Data Scientist", "Machine Learning Engineer",
+  "AI Engineer", "Deep Learning Engineer", "NLP Engineer", "Computer Vision Engineer",
+  "Cybersecurity Analyst", "Security Engineer", "QA Engineer", "Test Engineer",
+  "Automation Engineer", "Business Analyst", "Product Manager", "UI/UX Designer",
+  "Graphic Designer", "Game Developer", "Embedded Systems Engineer", "Blockchain Developer",
+  "AR/VR Developer", "Database Administrator", "System Administrator", "Network Engineer",
+  "Technical Support Engineer", "Solutions Architect"
+].sort();
+
+const PREDEFINED_COMPANIES = [
+  "Google", "Microsoft", "Amazon", "Meta", "Apple", "Netflix", "Adobe", "Oracle", "IBM", "Intel",
+  "NVIDIA", "Tesla", "Salesforce", "Cisco", "SAP", "Uber", "Airbnb", "Spotify", "LinkedIn", "PayPal",
+  "Atlassian", "Dropbox", "Stripe", "OpenAI", "Infosys", "TCS", "Wipro", "Accenture", "Cognizant",
+  "Capgemini", "Tech Mahindra", "HCL", "Zoho", "Freshworks", "Flipkart", "Paytm", "PhonePe", "Swiggy",
+  "Zomato", "Ola", "Razorpay", "Meesho", "Myntra", "Juspay"
+].sort();
+
+const PREDEFINED_SOFT_SKILLS = [
+  "Communication", "Leadership", "Problem Solving", "Critical Thinking", "Analytical Thinking",
+  "Teamwork", "Collaboration", "Adaptability", "Time Management", "Creativity", "Decision Making",
+  "Conflict Resolution", "Public Speaking", "Negotiation", "Emotional Intelligence",
+  "Project Management", "Mentorship", "Attention to Detail", "Customer Handling",
+  "Presentation Skills", "Research Skills", "Strategic Thinking", "Innovation", "Self Learning"
+].sort();
+
+const PREDEFINED_TECH_SKILLS = [
+  "Java", "C", "C++", "Python", "JavaScript", "TypeScript", "Go", "Rust", "Kotlin", "Swift", "PHP", "Ruby", "Scala", "R", "Dart", "Perl",
+  "HTML", "CSS", "SASS", "Bootstrap", "Tailwind CSS", "React", "Next.js", "Vue.js", "Nuxt.js", "Angular", "Redux", "jQuery",
+  "Node.js", "Express.js", "Spring Boot", "Django", "Flask", "FastAPI", "Laravel", "ASP.NET", "NestJS", "Ruby on Rails",
+  "MySQL", "PostgreSQL", "MongoDB", "Firebase", "SQLite", "Redis", "Oracle DB", "MariaDB", "Cassandra",
+  "AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Jenkins", "Terraform", "Git", "GitHub", "GitLab", "CI/CD", "Linux", "Nginx",
+  "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "OpenCV", "NLP", "Computer Vision", "Data Structures", "Algorithms", "Data Analysis", "Power BI", "Tableau",
+  "Flutter", "React Native", "Android Development", "iOS Development",
+  "Cybersecurity", "Ethical Hacking", "Network Security", "Penetration Testing"
+].sort();
+
+const SearchableMultiSelect = ({ options, selected, onChange, placeholder }: { options: string[], selected: string[], onChange: (val: string[]) => void, placeholder: string }) => {
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filteredOptions = options.filter(opt => 
+    opt.toLowerCase().includes(query.toLowerCase()) && 
+    !selected.some(s => s.toLowerCase() === opt.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-2 relative">
+      <Input
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        placeholder={placeholder}
+        className="bg-secondary/50 mt-1"
+      />
+      <AnimatePresence>
+        {isOpen && filteredOptions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none"
+          >
+            {filteredOptions.map(opt => (
+              <div
+                key={opt}
+                className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (!selected.some(s => s.toLowerCase() === opt.toLowerCase())) {
+                    onChange([...selected, opt]);
+                  }
+                  setQuery("");
+                  setIsOpen(false);
+                }}
+              >
+                {opt}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {selected.map(item => (
+            <div key={item} className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full text-sm">
+              {item}
+              <button onClick={() => onChange(selected.filter(i => i !== item))} className="text-muted-foreground hover:text-foreground">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SearchableInput = ({ value, onChange, options, placeholder, className }: { value: string, onChange: (val: string) => void, options: string[], placeholder?: string, className?: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const filteredOptions = value ? options.filter(opt => opt.toLowerCase().includes(value.toLowerCase()) && opt !== value).slice(0, 10) : [];
+  return (
+    <div className="relative w-full">
+      <Input value={value} onChange={(e) => { onChange(e.target.value); setIsOpen(true); }} onFocus={() => setIsOpen(true)} onBlur={() => setTimeout(() => setIsOpen(false), 200)} placeholder={placeholder} className={className} />
+      <AnimatePresence>
+        {isOpen && filteredOptions.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }} className="absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none">
+            {filteredOptions.map(opt => (
+              <div key={opt} className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground" onMouseDown={(e) => { e.preventDefault(); onChange(opt); setIsOpen(false); }}>{opt}</div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 interface OnboardingPageProps {
   user: User;
   profile: CareerProfile | null;
@@ -52,7 +177,8 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
   const [certifications, setCertifications] = useState<string[]>([]);
   const [workHistory, setWorkHistory] = useState<WorkEntry[]>([emptyWorkEntry()]);
   const [technicalSkills, setTechnicalSkills] = useState<SkillEntry[]>([]);
-  const [skillInput, setSkillInput] = useState("");
+  const [techQuery, setTechQuery] = useState("");
+  const [isTechOpen, setIsTechOpen] = useState(false);
   const [softSkills, setSoftSkills] = useState<string[]>([]);
   const [fears, setFears] = useState<string[]>([]);
   const [fearNotes, setFearNotes] = useState("");
@@ -91,22 +217,6 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
     setWorkHistory(workHistory.map((w) => (w.id === id ? { ...w, [field]: value } : w)));
   };
 
-  const addSkill = () => {
-    if (skillInput.trim() && !technicalSkills.find((s) => s.name === skillInput.trim())) {
-      setTechnicalSkills([...technicalSkills, { name: skillInput.trim(), proficiency: "Intermediate" }]);
-      setSkillInput("");
-    }
-  };
-
-  /**
-   * Per-step validation. Returns an error message when the current
-   * step has missing/empty required fields, or null when the step is
-   * complete and the user should be allowed to advance. See
-   * https://github.com/Aashikhandelwan05/PrepIQ/issues/5.
-   *
-   * Step 4 (Interview Fears) is intentionally optional — the
-   * checkboxes + notes are signal, not a gate.
-   */
   const validateStep = (currentStep: number): string | null => {
     switch (currentStep) {
       case 0:
@@ -124,11 +234,45 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
           return "Please enter your graduation year.";
         return null;
       case 2: {
-        const hasFilledEntry = workHistory.some(
-          (entry) => entry.jobTitle.trim() !== "" && entry.company.trim() !== "",
-        );
-        if (!hasFilledEntry)
-          return "Add at least one work entry with both job title and company.";
+        let filledCount = 0;
+        const currentYear = new Date().getFullYear();
+        
+        for (const entry of workHistory) {
+          const isFilled = entry.jobTitle.trim() || entry.company.trim() || entry.from.trim() || entry.to.trim();
+          if (!isFilled) continue;
+          
+          filledCount++;
+          
+          if (!entry.jobTitle.trim() || !entry.company.trim()) {
+            return "Please provide both job title and company for all work entries.";
+          }
+
+          if (entry.from.trim()) {
+            const startYearMatch = entry.from.match(/\b(19|20)\d{2}\b/);
+            if (!startYearMatch) return "Please include a valid year (e.g., 2020) in the 'From' field.";
+            
+            const startYear = parseInt(startYearMatch[0], 10);
+            if (startYear > currentYear) return `Start year (${startYear}) cannot be in the future.`;
+            if (startYear < 1950) return `Start year (${startYear}) is unrealistic.`;
+
+            if (entry.to.trim()) {
+              const isPresent = entry.to.toLowerCase() === "present" || entry.to.toLowerCase() === "current";
+              const endYearMatch = entry.to.match(/\b(19|20)\d{2}\b/);
+              
+              if (!endYearMatch && !isPresent) return "Please include a valid year or 'Present' in the 'To' field.";
+              
+              const endYear = endYearMatch ? parseInt(endYearMatch[0], 10) : currentYear;
+              
+              if (!isPresent && endYear > currentYear) return `End year (${endYear}) cannot be in the future.`;
+              if (endYear < startYear) return `End year (${endYear}) must be greater than or equal to start year (${startYear}).`;
+            }
+          }
+        }
+
+        if (filledCount === 0) {
+          return "Add at least one work entry with job title and company.";
+        }
+        
         return null;
       }
       case 3:
@@ -197,6 +341,11 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
     }
   };
 
+  const filteredTechOptions = PREDEFINED_TECH_SKILLS.filter(opt => 
+    opt.toLowerCase().includes(techQuery.toLowerCase()) && 
+    !technicalSkills.some(s => s.name.toLowerCase() === opt.toLowerCase())
+  );
+
   const progress = ((step + 1) / STEPS.length) * 100;
 
   return (
@@ -235,11 +384,11 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
                   </div>
                   <div>
                     <Label>Target Job Roles</Label>
-                    <TagInput tags={targetRoles} onChange={setTargetRoles} placeholder="e.g. Frontend Developer" />
+                    <SearchableMultiSelect options={PREDEFINED_ROLES} selected={targetRoles} onChange={setTargetRoles} placeholder="Search for a role..." />
                   </div>
                   <div>
                     <Label>Dream Companies</Label>
-                    <TagInput tags={dreamCompanies} onChange={setDreamCompanies} placeholder="e.g. Google" />
+                    <SearchableMultiSelect options={PREDEFINED_COMPANIES} selected={dreamCompanies} onChange={setDreamCompanies} placeholder="Search for a company..." />
                   </div>
                 </>
               )}
@@ -284,10 +433,10 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <Input placeholder="Job Title" value={entry.jobTitle} onChange={(e) => updateWork(entry.id, "jobTitle", e.target.value)} className="bg-secondary/50" />
-                        <Input placeholder="Company" value={entry.company} onChange={(e) => updateWork(entry.id, "company", e.target.value)} className="bg-secondary/50" />
-                        <Input placeholder="From (e.g. Jan 2020)" value={entry.from} onChange={(e) => updateWork(entry.id, "from", e.target.value)} className="bg-secondary/50" />
-                        <Input placeholder="To (e.g. Dec 2023)" value={entry.to} onChange={(e) => updateWork(entry.id, "to", e.target.value)} className="bg-secondary/50" />
+                        <SearchableInput options={PREDEFINED_ROLES} placeholder="Job Title" value={entry.jobTitle} onChange={(v) => updateWork(entry.id, "jobTitle", v)} className="bg-secondary/50" />
+                        <SearchableInput options={PREDEFINED_COMPANIES} placeholder="Company" value={entry.company} onChange={(v) => updateWork(entry.id, "company", v)} className="bg-secondary/50" />
+                        <Input placeholder="From (e.g. 2020)" value={entry.from} onChange={(e) => updateWork(entry.id, "from", e.target.value)} className="bg-secondary/50" />
+                        <Input placeholder="To (e.g. 2023 or Present)" value={entry.to} onChange={(e) => updateWork(entry.id, "to", e.target.value)} className="bg-secondary/50" />
                       </div>
                       <Textarea placeholder="Key responsibilities..." value={entry.responsibilities} onChange={(e) => updateWork(entry.id, "responsibilities", e.target.value)} className="bg-secondary/50" />
                     </div>
@@ -302,17 +451,46 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
                 <>
                   <div>
                     <Label>Technical Skills</Label>
-                    <div className="flex gap-2 mt-1">
+                    <div className="mt-1 relative">
                       <Input
-                        value={skillInput}
-                        onChange={(e) => setSkillInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
-                        placeholder="Add a skill..."
+                        value={techQuery}
+                        onChange={(e) => {
+                          setTechQuery(e.target.value);
+                          setIsTechOpen(true);
+                        }}
+                        onFocus={() => setIsTechOpen(true)}
+                        onBlur={() => setTimeout(() => setIsTechOpen(false), 200)}
+                        placeholder="Search for a technical skill..."
                         className="bg-secondary/50"
                       />
-                      <Button onClick={addSkill} variant="outline" size="icon">
-                        <Plus className="w-4 h-4" />
-                      </Button>
+                      <AnimatePresence>
+                        {isTechOpen && filteredTechOptions.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none"
+                          >
+                            {filteredTechOptions.map(opt => (
+                              <div
+                                key={opt}
+                                className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  if (!technicalSkills.some(s => s.name.toLowerCase() === opt.toLowerCase())) {
+                                    setTechnicalSkills([...technicalSkills, { name: opt, proficiency: "Intermediate" }]);
+                                  }
+                                  setTechQuery("");
+                                  setIsTechOpen(false);
+                                }}
+                              >
+                                {opt}
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                     <div className="space-y-2 mt-3">
                       {technicalSkills.map((skill, idx) => (
@@ -344,7 +522,7 @@ export default function OnboardingPage({ user, profile, onSave }: OnboardingPage
                   </div>
                   <div>
                     <Label>Soft Skills</Label>
-                    <TagInput tags={softSkills} onChange={setSoftSkills} placeholder="e.g. Leadership" />
+                    <SearchableMultiSelect options={PREDEFINED_SOFT_SKILLS} selected={softSkills} onChange={setSoftSkills} placeholder="Search for a soft skill..." />
                   </div>
                 </>
               )}

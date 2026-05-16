@@ -14,10 +14,10 @@ from urllib.request import Request, urlopen
 from typing import Any, Literal
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, create_engine, select
+from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from .ml import analyze_confidence, compute_match_score, extract_skills
@@ -318,6 +318,13 @@ class CreateMockAttemptRequest(BaseModel):
     sessionId: str = ""
     question: str
     userAnswer: str
+
+
+class PaginatedMockAttempts(BaseModel):
+    items: list[MockAttempt]
+    total: int
+    limit: int
+    offset: int
 
 
 JobStatus = Literal["Applied", "Screening", "Interview", "Offer", "Rejected", "Ghosted"]
@@ -833,10 +840,29 @@ def delete_session(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.get("/api/users/{user_id}/mocks", response_model=list[MockAttempt])
-def get_mock_attempts(user_id: str, _: UserTable = Depends(require_current_user), db: Session = Depends(get_db)) -> list[MockAttempt]:
-    rows = db.execute(select(MockAttemptTable).where(MockAttemptTable.user_id == user_id).order_by(MockAttemptTable.created_at.asc())).scalars()
-    return [mock_from_table(row) for row in rows]
+@app.get("/api/users/{user_id}/mocks", response_model=PaginatedMockAttempts)
+def get_mock_attempts(
+    user_id: str,
+    limit: int = Query(default=20, ge=1, le=100, description="No. of results that will be returned (1–100)"),
+    offset: int = Query(default=0, ge=0, description="Number of results that has to be skipped"),
+    _: UserTable = Depends(require_current_user),
+    db: Session = Depends(get_db),
+) -> PaginatedMockAttempts:
+    base_filter = MockAttemptTable.user_id == user_id
+    total = db.execute(select(func.count()).select_from(MockAttemptTable).where(base_filter)).scalar_one()
+    rows = db.execute(
+        select(MockAttemptTable)
+        .where(base_filter)
+        .order_by(MockAttemptTable.created_at.asc())
+        .limit(limit)
+        .offset(offset)
+    ).scalars().all()
+    return PaginatedMockAttempts(
+        items=[mock_from_table(row) for row in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.post("/api/users/{user_id}/mocks", response_model=MockAttempt, status_code=status.HTTP_201_CREATED)

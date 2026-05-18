@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from uuid import uuid4
@@ -44,6 +45,41 @@ class PrepIQApiTestCase(unittest.TestCase):
         response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_load_local_env_preserves_existing_environment(self) -> None:
+        from backend.app.main import load_local_env
+
+        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as env_file:
+            env_file.write("PREPIQ_TEST_ENV=from-file\n")
+            env_file.write("PREPIQ_EXISTING_ENV=from-file\n")
+            env_path = env_file.name
+
+        previous_env_file = os.environ.get("PREPIQ_ENV_FILE")
+        previous_new = os.environ.get("PREPIQ_TEST_ENV")
+        previous_existing = os.environ.get("PREPIQ_EXISTING_ENV")
+        try:
+            os.environ["PREPIQ_ENV_FILE"] = env_path
+            os.environ.pop("PREPIQ_TEST_ENV", None)
+            os.environ["PREPIQ_EXISTING_ENV"] = "already-set"
+
+            load_local_env()
+
+            self.assertEqual(os.environ["PREPIQ_TEST_ENV"], "from-file")
+            self.assertEqual(os.environ["PREPIQ_EXISTING_ENV"], "already-set")
+        finally:
+            if previous_env_file is None:
+                os.environ.pop("PREPIQ_ENV_FILE", None)
+            else:
+                os.environ["PREPIQ_ENV_FILE"] = previous_env_file
+            if previous_new is None:
+                os.environ.pop("PREPIQ_TEST_ENV", None)
+            else:
+                os.environ["PREPIQ_TEST_ENV"] = previous_new
+            if previous_existing is None:
+                os.environ.pop("PREPIQ_EXISTING_ENV", None)
+            else:
+                os.environ["PREPIQ_EXISTING_ENV"] = previous_existing
+            os.unlink(env_path)
 
     def test_extract_skills_endpoint_returns_skill_list(self) -> None:
         from backend.app import ml

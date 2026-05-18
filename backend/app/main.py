@@ -23,6 +23,26 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sess
 from .ml import analyze_confidence, compute_match_score, extract_skills
 
 
+logger = logging.getLogger(__name__)
+
+
+def load_local_env() -> None:
+    env_path = os.getenv("PREPIQ_ENV_FILE", ".env")
+    if not os.path.exists(env_path):
+        return
+
+    with open(env_path, encoding="utf-8") as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_local_env()
+
+
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/prepiq")
 APP_SECRET = os.getenv("APP_SECRET", "change-me-in-production")
 ACCESS_TOKEN_TTL_HOURS = int(os.getenv("ACCESS_TOKEN_TTL_HOURS", "168"))
@@ -526,8 +546,8 @@ def generate_session_payload(job_title: str, company: str, jd_text: str, resume_
         roadmap = [RoadmapDay(**item) for item in response["roadmap"]]
         if len(roadmap) >= 1 and len(question_bank) >= 1 and len(gap_analysis) >= 1:
             return gap_analysis, readiness, question_bank, roadmap
-    except (OpenRouterError, KeyError, TypeError, ValueError):
-        pass
+    except (OpenRouterError, KeyError, TypeError, ValueError) as exc:
+        logger.warning("Using fallback prep session payload because OpenRouter failed: %s", exc)
 
     # Fallback: use ML match score as readiness when OpenRouter is unavailable
     readiness = compute_match_score(resume_text, jd_text)
@@ -586,8 +606,8 @@ def evaluate_mock_attempt(question: str, answer: str) -> tuple[int, MockFeedback
         )
         if feedback.strengths and feedback.missing:
             return score, feedback
-    except (OpenRouterError, KeyError, TypeError, ValueError):
-        pass
+    except (OpenRouterError, KeyError, TypeError, ValueError) as exc:
+        logger.warning("Using fallback mock feedback because OpenRouter failed: %s", exc)
 
     base_seed = f"{question}|{answer}"
     answer_len = len(answer.strip())

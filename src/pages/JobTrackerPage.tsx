@@ -264,9 +264,8 @@ export default function JobTrackerPage({ jobs, onAddJob, onUpdateJob }: JobTrack
                     <div
                       key={job.id}
                       onClick={() => setSelectedJob(job)}
-                      className={`rounded-xl bg-card border p-3 cursor-pointer hover:border-primary/30 transition-all ${
-                        isOverdue(job) ? "border-destructive/50 shadow-[0_0_10px_-3px_hsl(var(--destructive)/0.4)]" : "border-border"
-                      }`}
+                      className={`rounded-xl bg-card border p-3 cursor-pointer hover:border-primary/30 transition-all ${isOverdue(job) ? "border-destructive/50 shadow-[0_0_10px_-3px_hsl(var(--destructive)/0.4)]" : "border-border"
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
@@ -323,7 +322,9 @@ export default function JobTrackerPage({ jobs, onAddJob, onUpdateJob }: JobTrack
                             void updateSelectedJobStatus(job, v as Status);
                           }}
                         >
-                          <SelectTrigger className="w-[130px] h-8 bg-secondary/50 text-xs">
+                          <SelectTrigger
+                            className={`w-[130px] h-8 text-xs border ${statusColor[job.status]}`}
+                          >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

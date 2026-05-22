@@ -80,11 +80,53 @@ export default function DashboardPage({ user, profile, sessions, mocks, jobs }: 
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={BookOpen} label="Prep Sessions" value={sessions.length} />
-        <StatCard icon={MessageSquare} label="Mock Interviews" value={mocks.length} gradient="gradient-accent" />
-        <StatCard icon={Briefcase} label="Jobs Applied" value={jobs.length} gradient="gradient-warm" />
-        <StatCard icon={TrendingUp} label="Avg Mock Score" value={`${avgScore * 10}/100`} gradient="gradient-success" />
+      <div
+        onClick={() => navigate("/interview-prep")}
+        className="cursor-pointer transition hover:scale-[1.02]"
+      >
+        <StatCard
+          icon={BookOpen}
+          label="Prep Sessions"
+          value={sessions.length}
+        />
       </div>
+
+      <div
+        onClick={() => navigate("/mock-interview")}
+        className="cursor-pointer transition hover:scale-[1.02]"
+      >
+        <StatCard
+          icon={MessageSquare}
+          label="Mock Interviews"
+          value={mocks.length}
+          gradient="gradient-accent"
+        />
+      </div>
+
+      <div
+        onClick={() => navigate("/job-tracker")}
+        className="cursor-pointer transition hover:scale-[1.02]"
+      >
+        <StatCard
+          icon={Briefcase}
+          label="Jobs Applied"
+          value={jobs.length}
+          gradient="gradient-warm"
+        />
+      </div>
+
+      <div
+        onClick={() => navigate("/progress")}
+        className="cursor-pointer transition hover:scale-[1.02]"
+      >
+        <StatCard
+          icon={TrendingUp}
+          label="Avg Mock Score"
+          value={`${avgScore * 10}/100`}
+          gradient="gradient-success"
+        />
+      </div>
+    </div>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">

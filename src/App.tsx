@@ -112,7 +112,12 @@ function AppRoutes() {
         <Route path="/onboarding" element={!hydrated ? <RouteFallback /> : user ? <OnboardingPage user={user} profile={profile} onSave={saveProfile} /> : <Navigate to="/login" replace />} />
         <Route path="/dashboard" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><DashboardPage user={user!} profile={profile} sessions={sessions} mocks={attempts} jobs={jobs} /></ProtectedRoute>} />
         <Route path="/career-dna" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><CareerDNAPage user={user!} profile={profile} /></ProtectedRoute>} />
-        <Route path="/interview-prep" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><InterviewPrepPage sessions={sessions} onAddSession={addSession} userId={user?.id || ""} /></ProtectedRoute>} />
+        <Route path="/interview-prep" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><InterviewPrepPage
+          sessions={sessions}
+          jobs={jobs}
+          onAddSession={addSession}
+          userId={user?.id || ""}
+        /></ProtectedRoute>} />
         <Route path="/mock-interview" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><MockInterviewPage sessions={sessions} attempts={attempts} onAddAttempt={addAttempt} userId={user?.id || ""} /></ProtectedRoute>} />
         <Route path="/job-tracker" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><JobTrackerPage jobs={jobs} sessions={sessions} onAddJob={addJob} onUpdateJob={updateJob} userId={user?.id || ""} /></ProtectedRoute>} />
         <Route path="/progress" element={<ProtectedRoute hydrated={hydrated} user={user} logout={logout} resourceErrorMessage={resourceErrorMessage}><ProgressPage mocks={attempts} sessions={sessions} /></ProtectedRoute>} />

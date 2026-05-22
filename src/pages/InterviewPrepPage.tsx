@@ -9,15 +9,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { CreateInterviewSessionInput, InterviewSession } from "@/lib/store";
+import {
+  CreateInterviewSessionInput,
+  InterviewSession,
+  JobApplication,
+} from "@/lib/store";
 
 interface InterviewPrepPageProps {
   sessions: InterviewSession[];
+  jobs: JobApplication[];
   onAddSession: (input: CreateInterviewSessionInput) => Promise<InterviewSession>;
   userId: string;
 }
 
-export default function InterviewPrepPage({ sessions, onAddSession }: InterviewPrepPageProps) {
+export default function InterviewPrepPage({
+  sessions,
+  jobs,
+  onAddSession,
+}: InterviewPrepPageProps) {
   const [showForm, setShowForm] = useState(false);
   const [jobTitle, setJobTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -27,7 +36,20 @@ export default function InterviewPrepPage({ sessions, onAddSession }: InterviewP
   const [activeSession, setActiveSession] = useState<InterviewSession | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [diffFilter, setDiffFilter] = useState<string>("all");
+  const [selectedJobId, setSelectedJobId] = useState("");
   const { toast } = useToast();
+
+  const handleImportJob = (jobId: string) => {
+    setSelectedJobId(jobId);
+
+    const selectedJob = jobs.find((job) => job.id === jobId);
+
+    if (!selectedJob) return;
+
+    setJobTitle(selectedJob.jobTitle);
+    setCompany(selectedJob.companyName);
+    setJd(selectedJob.notes || "");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +103,25 @@ export default function InterviewPrepPage({ sessions, onAddSession }: InterviewP
       {showForm && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
+            {jobs.length > 0 && (
+              <div>
+                <Label>Import from Job Tracker</Label>
+
+                <select
+                  value={selectedJobId}
+                  onChange={(e) => handleImportJob(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-md bg-secondary/50 border border-border text-sm"
+                >
+                  <option value="">Select a job application</option>
+
+                  {jobs.map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.companyName} — {job.jobTitle}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Job Title</Label>
@@ -232,20 +273,19 @@ export default function InterviewPrepPage({ sessions, onAddSession }: InterviewP
                           background: activeSession.mlMatchScore >= 70
                             ? "hsl(var(--success))"
                             : activeSession.mlMatchScore >= 50
-                            ? "hsl(var(--warning))"
-                            : "hsl(var(--destructive))",
+                              ? "hsl(var(--warning))"
+                              : "hsl(var(--destructive))",
                         }}
                       />
                     </div>
                   </div>
                   <span
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                      activeSession.mlMatchScore >= 70
-                        ? "bg-success/10 text-success border-success/30"
-                        : activeSession.mlMatchScore >= 50
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${activeSession.mlMatchScore >= 70
+                      ? "bg-success/10 text-success border-success/30"
+                      : activeSession.mlMatchScore >= 50
                         ? "bg-warning/10 text-warning border-warning/30"
                         : "bg-destructive/10 text-destructive border-destructive/30"
-                    }`}
+                      }`}
                   >
                     {activeSession.mlMatchScore >= 70 ? "Strong" : activeSession.mlMatchScore >= 50 ? "Moderate" : "Weak"}
                   </span>

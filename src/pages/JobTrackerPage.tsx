@@ -15,6 +15,16 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { CreateJobApplicationInput, JobApplication, InterviewSession } from "@/lib/store";
 import { apiRequest } from "@/lib/api";
@@ -241,18 +251,48 @@ interface JobTrackerPageProps {
   sessions: InterviewSession[];
   onAddJob: (input: CreateJobApplicationInput) => Promise<JobApplication>;
   onUpdateJob: (id: string, updates: Partial<JobApplication>) => Promise<JobApplication>;
+  onDeleteJob: (id: string) => void;
   userId: string;
 }
 
-export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }: JobTrackerPageProps) {
+export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob, onDeleteJob, userId }: JobTrackerPageProps) {
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [showAdd, setShowAdd] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null);
   const [draftJob, setDraftJob] = useState<JobApplication | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [deletingJob, setDeletingJob] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [form, setForm] = useState({ companyName: "", jobTitle: "", jobUrl: "", status: "Applied" as Status });
   const { toast } = useToast();
+
+  const validateJobDetails = (companyName: string, jobTitle: string, jobUrl: string) => {
+    if (!isValidCompany(companyName)) {
+      toast({
+        title: "Invalid company name",
+        description: "Please enter a valid company name.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!jobTitle.trim()) {
+      toast({
+        title: "Invalid job title",
+        description: "Job title cannot be empty.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!isValidUrl(jobUrl)) {
+      toast({
+        title: "Invalid job URL",
+        description: "Please enter a valid application URL.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
 
   // Optimistic jobs state for DnD
   const [jobRoleOpen, setJobRoleOpen] = useState(false);
@@ -291,32 +331,7 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
   );
 
   const handleAdd = async () => {
-    if (!isValidCompany(form.companyName)) {
-      toast({
-        title: "Invalid company name",
-        description: "Please enter a valid company name.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!JOB_ROLES.includes(form.jobTitle)) {
-      toast({
-        title: "Invalid job title",
-        description: "Please select a valid job role.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isValidUrl(form.jobUrl)) {
-      toast({
-        title: "Invalid job URL",
-        description: "Please enter a valid application URL.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!validateJobDetails(form.companyName, form.jobTitle, form.jobUrl)) return;
     try {
       const job = await onAddJob({
         companyName: form.companyName,
@@ -370,6 +385,7 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
 
   const saveDraftJob = async () => {
     if (!draftJob) return;
+    if (!validateJobDetails(draftJob.companyName, draftJob.jobTitle, draftJob.jobUrl)) return;
     setSavingDraft(true);
     try {
       const updated = await onUpdateJob(draftJob.id, {
@@ -398,16 +414,14 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    if (!confirm("Are you sure you want to delete this job application?")) return;
     setDeletingJob(true);
     try {
       await apiRequest(`/api/users/${userId}/jobs/${jobId}`, {
         method: "DELETE",
       });
-      
-      const pIdx = jobs.findIndex((j) => j.id === jobId);
-      if (pIdx !== -1) jobs.splice(pIdx, 1);
-      
+
+      onDeleteJob(jobId);
+
       setLocalJobs((prev) => prev.filter((j) => j.id !== jobId));
       if (selectedJob?.id === jobId) {
         setSelectedJob(null);
@@ -422,6 +436,7 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
       });
     } finally {
       setDeletingJob(false);
+      setJobToDelete(null);
     }
   };
 
@@ -575,46 +590,18 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
                   <div>
                     <Label>Job Title</Label>
 
-                    <Popover open={jobRoleOpen} onOpenChange={setJobRoleOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="w-full mt-1 justify-between bg-secondary/50"
-                        >
-                          {form.jobTitle || "Select a job role"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Search job role..." />
-                          <CommandEmpty>No job role found.</CommandEmpty>
-
-                          <CommandGroup className="max-h-64 overflow-y-auto">
-                            {JOB_ROLES.map((role) => (
-                              <CommandItem
-                                key={role}
-                                value={role}
-                                onSelect={() => {
-                                  setForm({ ...form, jobTitle: role });
-                                  setJobRoleOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={`mr-2 h-4 w-4 ${form.jobTitle === role
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                    }`}
-                                />
-                                {role}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <Input
+                      list="job-roles"
+                      placeholder="e.g. Software Engineer"
+                      value={form.jobTitle}
+                      onChange={(e) => setForm({ ...form, jobTitle: e.target.value })}
+                      className="mt-1 bg-secondary/50"
+                    />
+                    <datalist id="job-roles">
+                      {JOB_ROLES.map((role) => (
+                        <option key={role} value={role} />
+                      ))}
+                    </datalist>
                   </div>
                   <div>
                     <Label>Job URL</Label>
@@ -739,7 +726,7 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
                 <Button type="button" variant="outline" onClick={() => setDraftJob(selectedJob)} disabled={savingDraft || deletingJob}>
                   Reset
                 </Button>
-                <Button type="button" variant="destructive" onClick={() => handleDeleteJob(draftJob.id)} disabled={savingDraft || deletingJob}>
+                <Button type="button" variant="destructive" onClick={() => setJobToDelete(draftJob.id)} disabled={savingDraft || deletingJob}>
                   {deletingJob ? "Deleting..." : "Delete"}
                 </Button>
               </div>
@@ -863,6 +850,32 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob }
           </Button>
         </div>
       )}
+
+      <AlertDialog open={!!jobToDelete} onOpenChange={(open) => !open && setJobToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the job application.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingJob}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (jobToDelete) {
+                  handleDeleteJob(jobToDelete);
+                }
+              }}
+              disabled={deletingJob}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingJob ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

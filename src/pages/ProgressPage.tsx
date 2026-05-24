@@ -1,4 +1,5 @@
-import { TrendingUp, BarChart3, Target, Calendar } from "lucide-react";
+import { useState } from "react";
+import { TrendingUp, BarChart3, Target, Calendar, Download, Loader2 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -10,7 +11,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { MockAttempt, InterviewSession } from "@/lib/store";
+import { generateProgressReport } from "@/lib/pdfGenerator";
 
 interface ProgressPageProps {
   mocks: MockAttempt[];
@@ -21,6 +24,21 @@ export default function ProgressPage({
   mocks,
   sessions,
 }: ProgressPageProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadReport = () => {
+    setIsDownloading(true);
+    setTimeout(() => {
+      try {
+        generateProgressReport(mocks, sessions);
+      } catch (err) {
+        console.error("Failed to generate PDF progress report:", err);
+      } finally {
+        setIsDownloading(false);
+      }
+    }, 800);
+  };
+
   // Score over time
   const scoreData = [...mocks]
     .sort(
@@ -135,14 +153,36 @@ export default function ProgressPage({
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Progress
-        </h1>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Progress
+          </h1>
 
-        <p className="text-sm text-muted-foreground">
-          Track your interview preparation journey
-        </p>
+          <p className="text-sm text-muted-foreground">
+            Track your interview preparation journey
+          </p>
+        </div>
+
+        {!isEmpty && (
+          <Button
+            onClick={handleDownloadReport}
+            disabled={isDownloading}
+            className="gradient-primary text-primary-foreground shadow-glow"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download Report
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {isEmpty ? (

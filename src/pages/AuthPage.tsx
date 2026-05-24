@@ -22,28 +22,100 @@ interface AuthPageProps {
 
 export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
+
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [passwordError, setPasswordError] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Full name validation
+  const handleNameChange = (value: string) => {
+    setName(value);
+
+    const regex = /^[A-Za-z\s]+$/;
+
+    if (value === "") {
+      setNameError("");
+    } else if (!regex.test(value)) {
+      setNameError("Full Name can only contain alphabets and spaces");
+    } else {
+      setNameError("");
+    }
+  };
+
+  // Confirm password validation
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+
+    if (password && value !== password) {
+      setPasswordError("Passwords do not match");
+    } else {
+      setPasswordError("");
+    }
+  };
+
+  // Password validation
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+
+    if (confirmPassword && value !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+    } else {
+      setPasswordError("");
+    }
+  };
+
   const isFormInvalid =
-    !email.trim() || !password.trim() || (mode === "signup" && !name.trim());
+    !email.trim() ||
+    !password.trim() ||
+    (mode === "signup" &&
+      (!name.trim() ||
+        !confirmPassword.trim() ||
+        !!nameError ||
+        !!passwordError));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (isLoading) return;
 
+    // Final validation before submit
+    if (mode === "signup") {
+      const nameRegex = /^[A-Za-z\s]+$/;
+
+      if (!nameRegex.test(name.trim())) {
+        setNameError("Full Name can only contain alphabets and spaces");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setPasswordError("Passwords do not match");
+        return;
+      }
+    }
+
     setIsLoading(true);
+
     try {
       if (mode === "login") {
         const res = await onLogin(email, password);
+
         if (res.success) {
           toast({
             title: "Welcome back!",
             description: "Logged in successfully.",
           });
+
           navigate("/dashboard");
         } else {
           toast({
@@ -54,11 +126,13 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
         }
       } else {
         const res = await onSignup(name, email, password);
+
         if (res.success) {
           toast({
             title: "Account created!",
             description: "Let's set up your profile.",
           });
+
           navigate("/onboarding");
         } else {
           toast({
@@ -109,7 +183,7 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
                   seekers.
                 </p>
 
-                {/*Features - desktop*/}
+                {/* Features - desktop */}
                 <div className="flex flex-wrap gap-3 mt-8">
                   <div className="px-4 py-2 rounded-full border border-border bg-card/50 text-sm text-muted-foreground">
                     AI Mock Interviews
@@ -138,7 +212,7 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
               </div>
             </motion.div>
 
-            {/* RIGHT*/}
+            {/* RIGHT */}
             <motion.div
               key={mode}
               initial={{
@@ -203,11 +277,15 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
                       <Input
                         id="name"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => handleNameChange(e.target.value)}
                         placeholder="John Doe"
                         required
                         className="mt-1 bg-secondary/50"
                       />
+
+                      {nameError && (
+                        <p className="text-sm text-red-500 mt-1">{nameError}</p>
+                      )}
                     </motion.div>
                   )}
 
@@ -225,6 +303,7 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
                     />
                   </div>
 
+                  {/* Password */}
                   <div>
                     <Label htmlFor="password">Password</Label>
 
@@ -233,15 +312,18 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => handlePasswordChange(e.target.value)}
                         placeholder="••••••••"
                         required
                         className="bg-secondary/50 pr-10"
                       />
+
                       <button
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showPassword ? (
@@ -252,6 +334,52 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
                       </button>
                     </div>
                   </div>
+
+                  {/* Confirm Password */}
+                  {mode === "signup" && (
+                    <div>
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+
+                      <div className="relative mt-1">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) =>
+                            handleConfirmPasswordChange(e.target.value)
+                          }
+                          placeholder="••••••••"
+                          required
+                          className="bg-secondary/50 pr-10"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword((prev) => !prev)
+                          }
+                          aria-label={
+                            showConfirmPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {passwordError && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {passwordError}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <Button
                     type="submit"
@@ -268,6 +396,7 @@ export default function AuthPage({ mode, onLogin, onSignup }: AuthPageProps) {
                     ) : (
                       <>
                         {mode === "login" ? "Sign In" : "Create Account"}
+
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     )}

@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BookOpen, Loader2, Search, Brain, Cpu, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,20 @@ export default function InterviewPrepPage({
   const jdFileRef = useRef<HTMLInputElement>(null);
   const resumeFileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.sessionId && sessions.length > 0) {
+      const s = sessions.find(s => s.id === location.state.sessionId);
+      if (s) {
+        setActiveSession(s);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, sessions]);
+
+  const linkedJob = activeSession ? jobs.find(j => j.linkedPrepSessionId === activeSession.id) : null;
 
   const handleImportJob = (jobId: string) => {
     setSelectedJobId(jobId);
@@ -275,8 +290,23 @@ export default function InterviewPrepPage({
       )}
 
       {activeSession && !loading && (
-        <Tabs defaultValue="gap" className="space-y-4">
-          <TabsList className="bg-secondary">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">{activeSession.company} — {activeSession.jobTitle}</h2>
+              <p className="text-sm text-muted-foreground">Generated on {new Date(activeSession.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {linkedJob && (
+                <Button variant="outline" onClick={() => navigate('/job-tracker', { state: { jobId: linkedJob.id } })}>
+                  View Tracked Job
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setActiveSession(null)}>Back to Sessions</Button>
+            </div>
+          </div>
+          <Tabs defaultValue="gap" className="space-y-4">
+            <TabsList className="bg-secondary">
             <TabsTrigger value="gap">Gap Analysis</TabsTrigger>
             <TabsTrigger value="readiness">Readiness</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
@@ -468,6 +498,7 @@ export default function InterviewPrepPage({
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       )}
 
       {sessions.length > 0 && !activeSession && !showForm && (

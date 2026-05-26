@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Briefcase,
   Plus,
@@ -212,7 +213,7 @@ function SortableColumn({ id, children }: { id: string; children: React.ReactNod
 }
 
 
-function SortableCard({ job, onClick, isOverdue }: { job: JobApplication; onClick: () => void; isOverdue: boolean }) {
+function SortableCard({ job, onClick, isOverdue, prepScore }: { job: JobApplication; onClick: () => void; isOverdue: boolean; prepScore?: number }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: job.id,
     data: { type: "Job", job },
@@ -242,7 +243,12 @@ function SortableCard({ job, onClick, isOverdue }: { job: JobApplication; onClic
           <p className="text-sm font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap max-w-full">
             {job.companyName}
           </p>
-          <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap max-w-full">{job.jobTitle}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap max-w-full">{job.jobTitle}</p>
+            {prepScore !== undefined && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0 h-4">{prepScore}% Prep</Badge>
+            )}
+          </div>
         </div>
       </div>
       <p className="text-xs text-muted-foreground">{job.dateApplied}</p>
@@ -270,6 +276,19 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob, 
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [form, setForm] = useState({ companyName: "", jobTitle: "", jobUrl: "", status: "Applied" as Status });
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle route state for auto-selection
+  useEffect(() => {
+    if (location.state?.jobId && jobs.length > 0) {
+      const j = jobs.find(j => j.id === location.state.jobId);
+      if (j) {
+        setSelectedJob(j);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, jobs]);
 
   const validateJobDetails = (companyName: string, jobTitle: string, jobUrl: string) => {
     if (!isValidCompany(companyName)) {
@@ -703,22 +722,34 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob, 
               </div>
               <div>
                 <Label>Linked Prep Session</Label>
-                <Select
-                  value={draftJob.linkedPrepSessionId || "none"}
-                  onValueChange={(v) => setDraftJob({ ...draftJob, linkedPrepSessionId: v === "none" ? null : v })}
-                >
-                  <SelectTrigger className="mt-1 bg-secondary/50">
-                    <SelectValue placeholder="Select a prep session" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None / No Prep Session</SelectItem>
-                    {sessions?.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.company} — {s.jobTitle}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={draftJob.linkedPrepSessionId || "none"}
+                    onValueChange={(v) => setDraftJob({ ...draftJob, linkedPrepSessionId: v === "none" ? null : v })}
+                  >
+                    <SelectTrigger className="mt-1 bg-secondary/50 flex-1">
+                      <SelectValue placeholder="Select a prep session" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None / No Prep Session</SelectItem>
+                      {sessions?.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.company} — {s.jobTitle}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {draftJob.linkedPrepSessionId && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="mt-1 shrink-0 h-9"
+                      onClick={() => navigate('/interview-prep', { state: { sessionId: draftJob.linkedPrepSessionId } })}
+                    >
+                      Go to Prep Plan
+                    </Button>
+                  )}
+                </div>
               </div>
               <div>
                 <Label>Notes</Label>
@@ -760,9 +791,12 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob, 
                   </div>
                   <div className="space-y-2 overflow-y-auto pr-1 max-h-[calc(100vh-320px)] [scrollbar-width:thin] [scrollbar-color:hsl(var(--primary))_transparent] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-secondary/30 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary/70 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-primary flex-grow min-h-[100px]">
                     <SortableContext items={colJobs.map((j) => j.id)} strategy={verticalListSortingStrategy}>
-                      {colJobs.map((job) => (
-                        <SortableCard key={job.id} job={job} onClick={() => setSelectedJob(job)} isOverdue={isOverdue(job)} />
-                      ))}
+                      {colJobs.map((job) => {
+                        const session = sessions.find(s => s.id === job.linkedPrepSessionId);
+                        return (
+                          <SortableCard key={job.id} job={job} onClick={() => setSelectedJob(job)} isOverdue={isOverdue(job)} prepScore={session?.readinessScore} />
+                        )
+                      })}
                     </SortableContext>
                     {colJobs.length === 0 && (
                       <div className="rounded-xl border border-dashed border-border p-4 text-center h-20 flex items-center justify-center">
@@ -815,7 +849,16 @@ export default function JobTrackerPage({ jobs, sessions, onAddJob, onUpdateJob, 
                 ) : (
                   localJobs.map((job) => (
                     <tr key={job.id} className="border-b border-border/50 hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedJob(job)}>
-                      <td className="py-3 px-4 font-medium text-foreground max-w-[220px] truncate">{job.companyName}</td>
+                      <td className="py-3 px-4 font-medium text-foreground max-w-[220px] truncate">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{job.companyName}</span>
+                          {job.linkedPrepSessionId && (
+                            <Badge variant="outline" className="text-[10px] py-0 h-5 shrink-0">
+                              {sessions.find(s => s.id === job.linkedPrepSessionId)?.readinessScore}% Prep
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-4 text-muted-foreground">{job.jobTitle}</td>
                       <td className="py-3 px-4 text-muted-foreground">{job.dateApplied}</td>
                       <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>

@@ -1153,20 +1153,9 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> AuthRespons
 
 @app.get("/api/auth/me", response_model=User)
 def me(
-    authorization: str | None = Header(default=None), db: Session = Depends(get_db)
+    current_user: UserTable = Depends(require_current_user)
 ) -> User:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization token",
-        )
-    payload = decode_token(authorization.removeprefix("Bearer ").strip())
-    user = db.get(UserTable, payload.get("sub"))
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
-        )
-    return user_from_table(user)
+    return user_from_table(current_user)
 
 
 @app.get("/api/users/{user_id}/profile", response_model=CareerProfile | None)

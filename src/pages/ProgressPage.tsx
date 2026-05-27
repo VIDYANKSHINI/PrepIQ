@@ -1,4 +1,7 @@
-import { TrendingUp, BarChart3, Target, Calendar } from "lucide-react";
+import { TrendingUp, BarChart3, Target, Calendar, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   LineChart,
   Line,
@@ -133,16 +136,74 @@ export default function ProgressPage({
   const isEmpty =
     mocks.length === 0 && sessions.length === 0;
 
+  const downloadReport = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Mock Interview Progress Report", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+    doc.setTextColor(0); // Reset text color to black
+    
+    const avgScore = mocks.length > 0 ? Math.round(mocks.reduce((sum, m) => sum + m.aiScore, 0) / mocks.length * 10) : 0;
+    doc.text(`Total Mock Attempts: ${mocks.length}`, 14, 40);
+    doc.text(`Average Score: ${avgScore}/100`, 14, 46);
+    if (averageConfidence !== null) {
+      doc.text(`Average Confidence: ${averageConfidence}%`, 14, 52);
+    }
+    
+    // Precompute a lookup map for question types
+    const questionTypeMap = new Map<string, string>();
+    for (const s of sessions) {
+      for (const qb of s.questionBank) {
+        questionTypeMap.set(qb.question, qb.type.charAt(0).toUpperCase() + qb.type.slice(1));
+      }
+    }
+    
+    const tableData = mocks.map((m) => {
+      const qType = questionTypeMap.get(m.question) || "Unknown";
+      const date = new Date(m.createdAt).toLocaleDateString();
+      const score = `${Math.round(m.aiScore * 10)}/100`;
+      const feedback = m.aiFeedback?.oneLineVerdict || "No feedback available";
+      return [date, qType, score, m.question, feedback];
+    });
+    
+    autoTable(doc, {
+      startY: 60,
+      head: [["Date", "Type", "Score", "Question", "Feedback"]],
+      body: tableData,
+      theme: "grid",
+      headStyles: { fillColor: [79, 70, 229] },
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 15 },
+        3: { cellWidth: 60 },
+        4: { cellWidth: 'auto' },
+      },
+    });
+    
+    doc.save("Interview_Progress_Report.pdf");
+  };
+
   return (
     <div className="space-y-6 animate-slide-up">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Progress
-        </h1>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Progress
+          </h1>
 
-        <p className="text-sm text-muted-foreground">
-          Track your interview preparation journey
-        </p>
+          <p className="text-sm text-muted-foreground">
+            Track your interview preparation journey
+          </p>
+        </div>
+        {!isEmpty && (
+          <Button onClick={downloadReport} className="gradient-primary text-primary-foreground">
+            <Download className="w-4 h-4 mr-2" /> Download Report
+          </Button>
+        )}
       </div>
 
       {isEmpty ? (

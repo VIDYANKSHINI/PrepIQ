@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-  "node": ">=22.0.0"
-},
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "backend:dev": "python -m uvicorn backend.app.main:app --reload --port 8000",
@@ -58,6 +58,8 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.38.0",
     "input-otp": "^1.4.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
